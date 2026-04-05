@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   LayoutDashboard,
   LineChart,
@@ -25,9 +26,7 @@ export function Sidebar() {
   return (
     <aside className="glass-card fixed left-3 top-3 z-40 hidden h-[calc(100vh-1.5rem)] w-56 flex-col rounded-2xl p-3 md:flex lg:w-60">
       <div className="mb-6 flex items-center gap-2 px-2 pt-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 text-sm font-bold shadow-lg shadow-blue-500/25">
-          FF
-        </div>
+        <BrandLogo size={36} className="h-9 w-9 shrink-0 shadow-lg shadow-blue-500/20" />
         <div>
           <p className="text-sm font-semibold tracking-tight text-white">
             FiboFlow
@@ -42,12 +41,18 @@ export function Sidebar() {
             (item.href !== "/dashboard" && pathname.startsWith(item.href));
           const Icon = item.icon;
           return (
-            <Link key={item.href} href={item.href} className="relative block">
+            <Link
+              key={item.href}
+              href={item.href}
+              prefetch={false}
+              className="relative block"
+            >
               {active ? (
                 <motion.span
-                  layoutId="nav-pill"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15 }}
                   className="absolute inset-0 rounded-xl bg-blue-600/15 ring-1 ring-blue-500/25"
-                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
                 />
               ) : null}
               <span

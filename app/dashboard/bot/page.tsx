@@ -24,6 +24,60 @@ const strategies: { value: BotStrategy; label: string }[] = [
   { value: "scalping", label: "Scalping" },
 ];
 
+/**
+ * Turn ISO timestamps from the trader loop into local, human text
+ * (e.g. "April 4, 2026, 1:20:47 AM EDT"). Handles glued suffixes like "...+00:00AAPL".
+ */
+function humanizeActivityTime(raw: string): string {
+  const s = raw.trim();
+  if (!s || s === "tick") return s || "—";
+
+  const isoHead =
+    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))/;
+  const m = s.match(isoHead);
+  if (m) {
+    const ms = Date.parse(m[1]);
+    if (!Number.isNaN(ms)) {
+      const when = new Intl.DateTimeFormat(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short",
+      }).format(ms);
+      const tail = s.slice(m[1].length).trim();
+      return tail ? `${when} · ${tail}` : when;
+    }
+  }
+
+  const whole = Date.parse(s);
+  if (!Number.isNaN(whole)) {
+    return new Intl.DateTimeFormat(undefined, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    }).format(whole);
+  }
+
+  return s;
+}
+
+/** True when timestamp field is ISO-only; extra symbol line comes from `ev.symbol` / `ev.signal`. */
+function activityTimeHasTrailingNote(raw: string): boolean {
+  const s = raw.trim();
+  const isoHead =
+    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))/;
+  const m = s.match(isoHead);
+  if (!m) return false;
+  return s.slice(m[1].length).trim().length > 0;
+}
+
 export default function BotPage() {
   const isBotEnabled = useStore((s) => s.isBotEnabled);
   const toggleBot = useStore((s) => s.toggleBot);
@@ -271,21 +325,25 @@ export default function BotPage() {
                 Recent loop activity
               </p>
               <ul className="space-y-2 text-xs text-zinc-400">
-                {events.map((ev, i) => (
-                  <li
-                    key={i}
-                    className="rounded-xl border border-white/5 bg-black/20 px-3 py-2"
-                  >
-                    <span className="text-zinc-500">
-                      {String(ev.t ?? ev.note ?? "tick")}
-                    </span>
-                    {ev.symbol ? (
-                      <span className="ml-2 text-zinc-300">
-                        {String(ev.symbol)} · {String(ev.signal ?? "—")}
+                {events.map((ev, i) => {
+                  const rawTime = String(ev.t ?? ev.note ?? "tick");
+                  const glued = activityTimeHasTrailingNote(rawTime);
+                  return (
+                    <li
+                      key={i}
+                      className="rounded-xl border border-white/5 bg-black/20 px-3 py-2"
+                    >
+                      <span className="text-zinc-400">
+                        {humanizeActivityTime(rawTime)}
                       </span>
-                    ) : null}
-                  </li>
-                ))}
+                      {ev.symbol && !glued ? (
+                        <span className="mt-1 block text-zinc-300">
+                          {String(ev.symbol)} · {String(ev.signal ?? "—")}
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             </Card>
           ) : null}

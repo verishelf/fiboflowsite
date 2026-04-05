@@ -15,9 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FiboFlow — Pro Trading Terminal",
+  title: "FiboFlow — Trade US equities with clarity",
   description:
-    "Dark, glassmorphic Alpaca-powered trading workspace with automation controls.",
+    "Professional web terminal for Alpaca: charts, orders, portfolio, and optional Fiboflow automation—built like a modern exchange.",
+  icons: {
+    icon: "/fiboflow-logo.png",
+    apple: "/fiboflow-logo.png",
+  },
 };
 
 export default function RootLayout({

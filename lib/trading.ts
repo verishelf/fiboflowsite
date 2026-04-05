@@ -9,16 +9,22 @@ import {
   getFiboflowPositions,
   getFiboflowTrades,
   postFiboflowTrade,
+  type FiboflowPortfolioHistory,
 } from "@/lib/fiboflow-api";
 import type { AlpacaAccount, AlpacaPosition, AlpacaOrder } from "@/lib/alpaca";
 import {
   fetchAccount as alpacaFetchAccount,
   fetchPositions as alpacaFetchPositions,
   fetchRecentOrders,
-  placeMarketOrder,
+  fetchOpenOrders,
+  cancelAlpacaOrder,
+  placeOrder,
   fetchLastTrade,
+  fetchLastCryptoTrade,
   type PlaceMarketOrderInput,
+  type PlaceOrderInput,
 } from "@/lib/alpaca";
+import { isCryptoPairSymbol } from "@/lib/instruments";
 
 export { fiboflowApiEnabled, formatFiboflowError } from "@/lib/fiboflow-api";
 
@@ -42,14 +48,26 @@ export async function fetchTradingAccount(): Promise<AlpacaAccount> {
         /* ignore */
       }
     }
+    const strMoney = (v: unknown): string | undefined => {
+      if (v === undefined || v === null) return undefined;
+      const s = String(v).trim();
+      return s === "" ? undefined : s;
+    };
     return {
       equity: a.equity ?? "0",
       cash: a.cash ?? "0",
       portfolio_value: a.portfolio_value,
-      buying_power: a.buying_power,
+      buying_power: strMoney(a.buying_power),
+      non_marginable_buying_power: strMoney(a.non_marginable_buying_power),
+      regt_buying_power: strMoney(a.regt_buying_power),
+      daytrading_buying_power: strMoney(a.daytrading_buying_power),
+      effective_buying_power: strMoney(a.effective_buying_power),
+      multiplier: strMoney(a.multiplier),
       last_equity: lastEquity,
       detail: a.detail,
       status: a.status,
+      /** Which Alpaca keys / positions Fiboflow used for this snapshot */
+      paper_or_live: a.paper_or_live,
     };
   }
   return alpacaFetchAccount();
@@ -91,8 +109,47 @@ export async function fetchTradingOrderHistory(limit = 40): Promise<AlpacaOrder[
   return fetchRecentOrders(limit);
 }
 
-export async function submitTradingMarketOrder(input: PlaceMarketOrderInput) {
+export type { FiboflowPortfolioHistory };
+
+/** Portfolio equity curve; only populated when Fiboflow API URL is set. */
+export async function fetchTradingPortfolioHistory(params?: {
+  period?: string;
+  timeframe?: string;
+}): Promise<FiboflowPortfolioHistory | null> {
+  if (!fiboflowApiEnabled()) return null;
+  try {
+    return await getFiboflowPortfolioHistory(params);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Working orders from Alpaca. Empty when routing through Fiboflow (server account may differ from browser keys).
+ */
+export async function fetchTradingOpenOrders(): Promise<AlpacaOrder[]> {
+  if (fiboflowApiEnabled()) return [];
+  return fetchOpenOrders();
+}
+
+export async function cancelTradingOrder(orderId: string): Promise<void> {
   if (fiboflowApiEnabled()) {
+    throw new Error(
+      "Cancel open orders in Alpaca or via Fiboflow when direct Alpaca mode is active."
+    );
+  }
+  await cancelAlpacaOrder(orderId);
+}
+
+export async function submitTradingOrder(input: PlaceOrderInput) {
+  if (fiboflowApiEnabled()) {
+    if (input.type !== "market") {
+      const err = new Error(
+        "Fiboflow API routes market orders only. Use Alpaca-in-browser (clear NEXT_PUBLIC_FIBOFLOW_API_URL) for limit/stop, or submit a market order."
+      );
+      (err as Error & { code?: string }).code = "FIBOFLOW_MARKET_ONLY";
+      throw err;
+    }
     const side = input.side.toUpperCase() as "BUY" | "SELL";
     return postFiboflowTrade({
       symbol: input.symbol,
@@ -101,10 +158,22 @@ export async function submitTradingMarketOrder(input: PlaceMarketOrderInput) {
       strategy: "manual_web",
     });
   }
-  return placeMarketOrder(input);
+  return placeOrder(input);
+}
+
+export async function submitTradingMarketOrder(input: PlaceMarketOrderInput) {
+  return submitTradingOrder({
+    symbol: input.symbol,
+    qty: input.qty,
+    side: input.side,
+    type: "market",
+  });
 }
 
 /** Last trade via Alpaca Data API when browser has keys/env (Fiboflow server has no public quote route). */
 export async function fetchTradingLastTrade(symbol: string): Promise<number | null> {
+  if (isCryptoPairSymbol(symbol)) {
+    return fetchLastCryptoTrade(symbol);
+  }
   return fetchLastTrade(symbol);
 }

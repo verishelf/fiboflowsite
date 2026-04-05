@@ -32,6 +32,7 @@ export function MobileNav() {
           <Link
             key={item.href}
             href={item.href}
+            prefetch={false}
             className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1 text-[10px] ${
               active ? "text-white" : "text-zinc-500"
             }`}

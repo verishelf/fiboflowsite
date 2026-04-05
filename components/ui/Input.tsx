@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import type { InputHTMLAttributes } from "react";
 
 export type InputProps = {
@@ -21,11 +22,18 @@ export function Input({
   id,
   ...rest
 }: InputProps) {
-  const inputId = id ?? label.replace(/\s+/g, "-").toLowerCase();
+  const autoId = useId();
+  const inputId =
+    id ??
+    (label.trim()
+      ? label.replace(/\s+/g, "-").toLowerCase()
+      : `input-${autoId.replace(/:/g, "")}`);
 
   return (
     <label className={`flex flex-col gap-1.5 text-sm ${className}`} htmlFor={inputId}>
-      <span className="font-medium text-zinc-300">{label}</span>
+      {label.trim() ? (
+        <span className="font-medium text-zinc-300">{label}</span>
+      ) : null}
       <input
         id={inputId}
         type={type}

@@ -26,6 +26,11 @@ export type FiboflowAccount = {
   cash: string;
   portfolio_value?: string;
   buying_power?: string;
+  non_marginable_buying_power?: string;
+  regt_buying_power?: string;
+  daytrading_buying_power?: string;
+  effective_buying_power?: string;
+  multiplier?: string;
   status?: string;
   paper_or_live?: string;
   detail?: string;
@@ -113,13 +118,27 @@ export async function fiboflowHealth(): Promise<boolean> {
   }
 }
 
+/** Avoid stale balances from browser or proxy caching of GET /account. */
+function noCacheGetConfig() {
+  return {
+    headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    params: { _t: Date.now() },
+  } as const;
+}
+
 export async function getFiboflowAccount(): Promise<FiboflowAccount> {
-  const { data } = await client().get<FiboflowAccount>("/account");
+  const { data } = await client().get<FiboflowAccount>(
+    "/account",
+    noCacheGetConfig()
+  );
   return data;
 }
 
 export async function getFiboflowPositions(): Promise<FiboflowPosition[]> {
-  const { data } = await client().get<FiboflowPosition[]>("/positions");
+  const { data } = await client().get<FiboflowPosition[]>(
+    "/positions",
+    noCacheGetConfig()
+  );
   return Array.isArray(data) ? data : [];
 }
 

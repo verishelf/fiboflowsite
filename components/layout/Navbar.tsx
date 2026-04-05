@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { hasConfiguredAlpacaEnv, useStore } from "@/store/useStore";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { fiboflowApiEnabled } from "@/lib/trading";
 import { getFiboflowBaseUrl } from "@/lib/fiboflow-api";
 
@@ -12,7 +13,9 @@ export function Navbar() {
 
   return (
     <header className="glass-card sticky top-0 z-30 mb-6 flex items-center justify-between rounded-2xl px-4 py-3">
-      <div>
+      <div className="flex min-w-0 items-center gap-3">
+        <BrandLogo size={36} className="h-9 w-9 shrink-0" />
+        <div className="min-w-0">
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -27,6 +30,7 @@ export function Navbar() {
               ? "Keys configured"
               : "Connect Alpaca in Settings"}
         </p>
+        </div>
       </div>
       <div className="flex items-center gap-3">
         <span
@@ -40,6 +44,7 @@ export function Navbar() {
         </span>
         <Link
           href="/"
+          prefetch={false}
           className="text-xs text-zinc-500 transition hover:text-zinc-300"
         >
           Landing

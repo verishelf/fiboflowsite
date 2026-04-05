@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { normalizeWatchlistSymbol } from "@/lib/watchlist";
 
 const STORAGE_KEY = "fiboflow-settings-v1";
 
@@ -41,10 +42,16 @@ type ToastSlice = {
   toasts: ToastMessage[];
 };
 
+type WatchlistSlice = {
+  /** Custom symbols (tickers or BASE/USD); merged into Trade selects. */
+  watchlistSymbols: string[];
+};
+
 type Store = CredentialsSlice &
   BotRiskSlice &
   DrawdownSlice &
-  ToastSlice & {
+  ToastSlice &
+  WatchlistSlice & {
     setApiCredentials: (key: string, secret: string, isPaper: boolean) => void;
     /** Paper vs live without changing stored keys (use with env or matching saved pair). */
     setIsPaperTrading: (isPaper: boolean) => void;
@@ -60,6 +67,8 @@ type Store = CredentialsSlice &
     resetKillSwitch: () => void;
     pushToast: (toast: Omit<ToastMessage, "id">) => void;
     dismissToast: (id: string) => void;
+    addWatchlistSymbol: (symbol: string) => void;
+    removeWatchlistSymbol: (symbol: string) => void;
   };
 
 const nanoid = () =>
@@ -98,6 +107,8 @@ export const useStore = create<Store>()(
       killSwitchTriggered: false,
 
       toasts: [],
+
+      watchlistSymbols: [],
 
       setApiCredentials: (key, secret, isPaper) =>
         set({
@@ -177,6 +188,20 @@ export const useStore = create<Store>()(
         set((s) => ({
           toasts: s.toasts.filter((t) => t.id !== id),
         })),
+
+      addWatchlistSymbol: (symbol) =>
+        set((s) => {
+          const u = normalizeWatchlistSymbol(symbol);
+          if (!u || s.watchlistSymbols.includes(u)) return s;
+          return { watchlistSymbols: [...s.watchlistSymbols, u] };
+        }),
+
+      removeWatchlistSymbol: (symbol) =>
+        set((s) => ({
+          watchlistSymbols: s.watchlistSymbols.filter(
+            (x) => x.toUpperCase() !== symbol.trim().toUpperCase()
+          ),
+        })),
     }),
     {
       name: STORAGE_KEY,
@@ -194,6 +219,7 @@ export const useStore = create<Store>()(
         killSwitchDrawdownPercent: state.killSwitchDrawdownPercent,
         peakEquity: state.peakEquity,
         killSwitchTriggered: state.killSwitchTriggered,
+        watchlistSymbols: state.watchlistSymbols,
       }),
     }
   )

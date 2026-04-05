@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { tradingViewSymbolForInstrument } from "@/lib/instruments";
 
 type TradingChartProps = {
   symbol: string;
@@ -44,8 +45,7 @@ export function TradingChart({
 
     const init = () => {
       if (!containerRef.current || !window.TradingView) return;
-      const sym = symbol.toUpperCase();
-      const tvSymbol = sym.includes(":") ? sym : `NASDAQ:${sym}`;
+      const tvSymbol = tradingViewSymbolForInstrument(symbol);
       widgetRef.current = new window.TradingView.widget({
         autosize: true,
         symbol: tvSymbol,
@@ -73,9 +73,17 @@ export function TradingChart({
     }
 
     return () => {
-      widgetRef.current?.remove?.();
+      try {
+        widgetRef.current?.remove?.();
+      } catch {
+        /* TradingView widget teardown can throw during fast route changes */
+      }
       widgetRef.current = null;
-      container.innerHTML = "";
+      try {
+        container.innerHTML = "";
+      } catch {
+        /* ignore */
+      }
     };
   }, [symbol, height, containerId, allowSymbolChange]);
 

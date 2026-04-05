@@ -12,7 +12,12 @@ import {
   formatFiboflowError,
 } from "@/lib/trading";
 import { postFiboflowAutoTrade } from "@/lib/fiboflow-api";
-import type { AlpacaAccount, AlpacaPosition } from "@/lib/alpaca";
+import {
+  type AlpacaAccount,
+  type AlpacaPosition,
+  displayAlpacaBuyingPower,
+} from "@/lib/alpaca";
+import { EquityCurveCard } from "@/components/dashboard/EquityCurveCard";
 
 function formatCurrency(n: string | number) {
   const num = typeof n === "string" ? parseFloat(n) : n;
@@ -37,6 +42,8 @@ export default function DashboardPage() {
   const [positions, setPositions] = useState<AlpacaPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
+  const [positionsError, setPositionsError] = useState<string | null>(null);
 
   const load = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -46,13 +53,23 @@ export default function DashboardPage() {
         setError(null);
       }
       try {
-        const [acct, pos] = await Promise.all([
-          fetchTradingAccount().catch(() => null),
-          fetchTradingPositions().catch(() => []),
-        ]);
-        setAccount(acct);
-        setPositions(Array.isArray(pos) ? pos : []);
-        if (acct) {
+        const acct = await fetchTradingAccount().catch(() => null);
+        let pos: AlpacaPosition[] | null = null;
+        let posErr: string | null = null;
+        try {
+          pos = await fetchTradingPositions();
+        } catch (e) {
+          posErr = fiboflowApiEnabled()
+            ? formatFiboflowError(e)
+            : e instanceof Error
+              ? e.message
+              : "Could not load positions";
+        }
+        setPositionsError(posErr);
+        setAccount((prev) => (acct != null ? acct : prev));
+        setPositions((prev) => (pos !== null ? pos : prev));
+        if (acct != null) {
+          setLastFetchedAt(new Date());
           const eq = parseFloat(acct.equity);
           if (!Number.isNaN(eq)) updatePeakEquity(eq);
         }
@@ -167,7 +184,19 @@ export default function DashboardPage() {
           </p>
           <p className="mt-1 text-xs text-zinc-500">
             Cash {formatCurrency(account?.cash ?? "—")}
+            {account ? (
+              <>
+                {" "}
+                · Buying power (Alpaca){" "}
+                {displayAlpacaBuyingPower(account)}
+              </>
+            ) : null}
           </p>
+          {lastFetchedAt ? (
+            <p className="mt-1 text-[10px] text-zinc-600">
+              Last updated {lastFetchedAt.toLocaleTimeString()}
+            </p>
+          ) : null}
         </Card>
 
         <Card>
@@ -244,6 +273,8 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      <EquityCurveCard />
+
       <Card>
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -258,6 +289,15 @@ export default function DashboardPage() {
             {positions.length} open
           </span>
         </div>
+        {positionsError ? (
+          <p className="mb-3 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+            <span className="font-medium">Positions request failed.</span>{" "}
+            {positionsError}
+            {fiboflowApiEnabled()
+              ? " Start the Fiboflow API (`npm run dev:api` or Python uvicorn), confirm NEXT_PUBLIC_FIBOFLOW_API_URL, then Refresh."
+              : " Check Alpaca keys in Settings, then Refresh."}
+          </p>
+        ) : null}
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] text-left text-sm">
             <thead className="text-xs uppercase text-zinc-500">
@@ -304,6 +344,24 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
+        {!loading &&
+        !positionsError &&
+        fiboflowApiEnabled() &&
+        positions.length === 0 &&
+        account?.status &&
+        account.status !== "disconnected" &&
+        account.status !== "error" ? (
+          <p className="mt-3 text-[11px] leading-relaxed text-zinc-600">
+            The API is responding. An empty list usually means no open holdings on this
+            Alpaca account
+            {account.paper_or_live
+              ? ` (${account.paper_or_live === "live" ? "live" : "paper"})`
+              : ""}
+            , or your fills closed out. If you expected positions, check the same mode in
+            the Alpaca dashboard and in the navbar (paper vs live) — Fiboflow follows
+            server + UI mode.
+          </p>
+        ) : null}
       </Card>
     </div>
   );
