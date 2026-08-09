@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+:root {
+  --color-black: #000000;
+  --color-charcoal: #1a1a1a;
+  --color-off-white: #f5f5f0;
+  --color-silver: #c0c0c0;
+  --color-muted: #888888;
+  --background: var(--color-black);
+  --foreground: var(--color-off-white);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-charcoal: var(--color-charcoal);
+  --color-off-white: var(--color-off-white);
+  --color-silver: var(--color-silver);
+  --color-muted: var(--color-muted);
+  --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+}
+
+::selection {
+  background: rgba(245, 245, 240, 0.2);
+  color: var(--color-off-white);
+}
+
+.section-padding {
+  @apply px-6 py-24 md:px-12 md:py-32 lg:px-16 lg:py-40;
+}
+
+.editorial-headline {
+  @apply font-display text-4xl font-light uppercase tracking-[0.15em] md:text-6xl lg:text-7xl xl:text-8xl;
+}
+
+.thin-border {
+  @apply border border-white/10;
+}
+
+.gradient-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0.6) 50%,
+    rgba(0, 0, 0, 0.95) 100%
+  );
+}
+
+.cinematic-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(0, 0, 0, 0.4) 40%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
