@@ -53,7 +53,7 @@ export default function AboutPage() {
         <div className="mx-auto max-w-7xl">
           <h2 className="text-xs uppercase tracking-[0.25em] text-white/40">Timeline</h2>
           <div className="mt-12 space-y-0">
-            {ABOUT_TIMELINE.map((item, index) => (
+            {ABOUT_TIMELINE.map((item) => (
               <div
                 key={item.title}
                 className="grid gap-6 border-b border-white/10 py-10 md:grid-cols-[120px_1fr] md:gap-12"

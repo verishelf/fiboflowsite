@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Camera, Car, FileText, Handshake, LayoutDashboard, MapPin, Trophy, Users } from "lucide-react";
+import { Camera, Car, FileText, Handshake, LayoutDashboard, MapPin, Trophy, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ADMIN_NAV = [

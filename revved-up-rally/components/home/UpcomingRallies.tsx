@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { Carousel } from "@/components/ui/Carousel";

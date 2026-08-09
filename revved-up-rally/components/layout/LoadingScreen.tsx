@@ -11,9 +11,8 @@ export function LoadingScreen() {
 
   useEffect(() => {
     if (reducedMotion) {
-      setProgress(100);
-      setVisible(false);
-      return;
+      const timer = window.setTimeout(() => setVisible(false), 0);
+      return () => window.clearTimeout(timer);
     }
 
     let frame = 0;
