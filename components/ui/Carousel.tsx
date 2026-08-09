@@ -46,15 +46,16 @@ export function Carousel({
   useEffect(() => {
     if (!emblaApi) return;
 
-    onSelect(emblaApi);
-    emblaApi.on("select", onSelect);
-    emblaApi.on("scroll", onSelect);
-    emblaApi.on("reInit", onSelect);
+    const sync = () => onSelect(emblaApi);
+    sync();
+    emblaApi.on("select", sync);
+    emblaApi.on("scroll", sync);
+    emblaApi.on("reInit", sync);
 
     return () => {
-      emblaApi.off("select", onSelect);
-      emblaApi.off("scroll", onSelect);
-      emblaApi.off("reInit", onSelect);
+      emblaApi.off("select", sync);
+      emblaApi.off("scroll", sync);
+      emblaApi.off("reInit", sync);
     };
   }, [emblaApi, onSelect]);
 
